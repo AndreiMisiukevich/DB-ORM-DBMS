@@ -44,17 +44,18 @@ namespace DatabaseServer
                 {
                     socketListener.Bind(IpEndPoint);
                     socketListener.Listen(int.Parse(AppSettings[BacklogKey]));
+                    var bufferSize = int.Parse(AppSettings[BufferSizeKey]);
+
                     while (!cancelatinToken.IsCancellationRequested)
                     {
                         var handler = socketListener.Accept();
-                        var bufferSize = int.Parse(AppSettings[BufferSizeKey]);
                         var bytes = new byte[bufferSize];
                         var bytesRec = handler.Receive(bytes);
-                        var data = Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                        var clientRequest = Encoding.Unicode.GetString(bytes, 0, bytesRec);
 
-                        var reply = string.Empty;
-                        var msg = Encoding.UTF8.GetBytes(reply);
-                        handler.Send(msg);
+                        var serverResponse = requestResponseHandler.HandleRequest(clientRequest);
+                        var reply = Encoding.Unicode.GetBytes(serverResponse);
+                        handler.Send(reply);
 
                         handler.Shutdown(SocketShutdown.Both);
                         handler.Close();

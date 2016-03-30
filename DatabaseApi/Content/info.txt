@@ -1,0 +1,2 @@
+﻿Every database is a zip-archive.
+Every table in db is a xml-file.
