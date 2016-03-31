@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DbApi.cs" />
+    <Compile Include="DbApiHelper.cs" />
     <Compile Include="IDbApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TableColumn.cs" />
