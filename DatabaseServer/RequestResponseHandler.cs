@@ -9,11 +9,16 @@ namespace DatabaseServer
 {
     internal class RequestResponseHandler: IRequestResponseHandler
     {
-        private const string CreateDbKey = "CREATEDB";
-        private const string CreateTableKey = "CREATETABLE";
-        private const string DropDbKey = "DROPDB";
-        private const string DropTableKey = "DROPTABLE";
-        private const string UseDbKey = "USEDB";
+        private const string CreateDbKey = "CREATE_DB";
+        private const string CreateTableKey = "CREATE_TABLE";
+        private const string DropDbKey = "DROP_DB";
+        private const string DropTableKey = "DROP_TABLE";
+        private const string UseDbKey = "USE_DB";
+
+        private const string InsertContentKey = "INSERT_CONTENT";
+        private const string GetContentKey = "GET_CONTENT";
+        private const string OkMessageKey = "OK_MSG";
+
         private readonly char[] _commandsSeparator = {'.', '\n', '\t', '\r', ' '};
         private readonly IDbApi _dbApi = DbApi.Api;
 
@@ -21,12 +26,10 @@ namespace DatabaseServer
         {
             var trimedRequest = RemoveMultyWhiteSpaces(request);
             var commands = trimedRequest.Split(_commandsSeparator, StringSplitOptions.RemoveEmptyEntries);
-            HandleCommands(commands);
-
-            return string.Empty; // TODO: get JSON request
+            return HandleCommands(commands);
         }
 
-        private void HandleCommands(string[] commands)
+        private string HandleCommands(string[] commands)
         {
             string currentDb = null;
 
@@ -38,15 +41,21 @@ namespace DatabaseServer
                     continue;
                 }
 
-                if (IsStartWith(command, CreateTableKey))
-                {
-                    _dbApi.CreateTable(command, currentDb);
-                    continue;
-                }
-
                 if (IsStartWith(command, DropDbKey))
                 {
                     _dbApi.DropDatabase(command);
+                    continue;
+                }
+
+                if (IsStartWith(command, UseDbKey))
+                {
+                    currentDb = _dbApi.UseDb(command);
+                    continue;
+                }
+
+                if (IsStartWith(command, CreateTableKey))
+                {
+                    _dbApi.CreateTable(command, currentDb);
                     continue;
                 }
 
@@ -56,12 +65,19 @@ namespace DatabaseServer
                     continue;
                 }
 
-
-                if (IsStartWith(command, UseDbKey))
+                if (IsStartWith(command, InsertContentKey))
                 {
-                    currentDb = _dbApi.UseDb(command);
+                    _dbApi.InsertContent(command, currentDb);
+                    continue;
+                }
+
+                if (IsStartWith(command, GetContentKey))
+                {
+                    return _dbApi.GetContent(command, currentDb);
                 }
             }
+
+            return ConfigurationManager.AppSettings[OkMessageKey];
         }
 
         private bool IsStartWith(string command, string key)

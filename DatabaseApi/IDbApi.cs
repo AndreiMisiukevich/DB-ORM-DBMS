@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DatabaseApi
+﻿namespace DatabaseApi
 {
     public interface IDbApi
     {
@@ -13,6 +7,9 @@ namespace DatabaseApi
 
         void DropDatabase(string command);
         void DropTable(string command, string dbName);
+
+        string GetContent(string command, string dbName);
+        void InsertContent(string command, string dbName);
 
         string UseDb(string command);
     }

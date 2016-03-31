@@ -6,14 +6,15 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Xml.Linq;
+using Newtonsoft.Json;
 
 namespace DatabaseApi
 {
     public sealed class DbApi: IDbApi
     {
-        private const string ContentFolderKey = "CONTENT";
-        private const string TableMetaInfoKey = "TABLEMETA";
-        private const string TableСontentInfoKey = "TABLECONTENT";
+        private const string ContentFolderKey = "CONTENT_FOLDER";
+        private const string TableMetaInfoKey = "TABLE_META";
+        private const string TableСontentInfoKey = "TABLE_CONTENT";
 
         private const string IntegerTypeKey = "INTEGER";
         private const string StringTypeKey = "STRING";
@@ -77,6 +78,16 @@ namespace DatabaseApi
                     archive.GetEntry(tableName).Delete();
                 }
             }
+        }
+
+        public void InsertContent(string command, string dbName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetContent(string command, string dbName)
+        {
+            throw new NotImplementedException();
         }
 
         public string UseDb(string command)

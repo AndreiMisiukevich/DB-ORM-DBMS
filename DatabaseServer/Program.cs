@@ -16,7 +16,7 @@ namespace DatabaseServer
         private const string BacklogKey = "BACKLOG";
         private const string BufferSizeKey = "BUFFER";
         private const string CancelationTimeOut = "TIMEOUT";
-        private const string StopMessageKey = "STOPMSG";
+        private const string StopMessageKey = "STOP_MSG";
 
         private static readonly IPAddress IpAddress;
         private static readonly IPEndPoint IpEndPoint;
