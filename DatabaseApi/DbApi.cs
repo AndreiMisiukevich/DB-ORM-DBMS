@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Text.RegularExpressions;
 using System.IO;
@@ -13,6 +14,10 @@ namespace DatabaseApi
         private const string ContentFolderKey = "CONTENT";
         private const string TableMetaInfoKey = "TABLEMETA";
         private const string TableСontentInfoKey = "TABLECONTENT";
+
+        private const string IntegerTypeKey = "INTEGER";
+        private const string StringTypeKey = "STRING";
+        private const string DoubleTypeKey = "DOUBLE";
 
         private static readonly Lazy<IDbApi> Instance = new Lazy<IDbApi>(() => new DbApi());
 
@@ -30,7 +35,7 @@ namespace DatabaseApi
             ZipFile.Open(Path.Combine(ContentFolderKey, GetName(command)), ZipArchiveMode.Create);
         }
 
-        public void CreateTable(string command, string dbName, params TableColumn[] columns)
+        public void CreateTable(string command, string dbName)
         {
             var tableName = GetName(command);
             var xmlFile = new XDocument(
@@ -41,6 +46,7 @@ namespace DatabaseApi
             var columnInfoTagName = ConfigurationManager.AppSettings[TableMetaInfoKey];
             var columnContentTagName = ConfigurationManager.AppSettings[TableСontentInfoKey];
 
+            var columns = ParseColumnInfo(command);
             xmlFile.AddFirst(columnInfoTagName, columns.Select(c => new XElement(c.Name, c.Type)));
             xmlFile.AddFirst(columnContentTagName);
 
@@ -80,7 +86,36 @@ namespace DatabaseApi
 
         private string GetName(string command)
         {
-            return command.Split(' ')[2].Trim().Replace("\"", string.Empty);
+            return command.Split(' ')[2].Replace("\"", string.Empty).Trim();
+        }
+
+        private IEnumerable<TableColumn> ParseColumnInfo(string command)
+        {
+            var matches = Regex.Matches(command, @"(\S+):(\S+)");
+            return
+                matches.Cast<Match>()
+                    .Select(match => match.Groups)
+                    .Select(groups => new TableColumn(groups[1].Value, ParseType(groups[2].Value)));
+        }
+
+        private Type ParseType(string typeName)
+        {
+            if (typeName == ConfigurationManager.AppSettings[IntegerTypeKey])
+            {
+                return typeof (Int32);
+            }
+
+            if (typeName == ConfigurationManager.AppSettings[StringTypeKey])
+            {
+                return typeof (String);
+            }
+
+            if (typeName == ConfigurationManager.AppSettings[DoubleTypeKey])
+            {
+                return typeof (Double);
+            }
+
+            throw new ArgumentException(string.Format("There are no such type {0}", typeName));
         }
     }
 }

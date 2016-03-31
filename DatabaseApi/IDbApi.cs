@@ -9,7 +9,7 @@ namespace DatabaseApi
     public interface IDbApi
     {
         void CreateDataBase(string command);
-        void CreateTable(string command, string dbName, params TableColumn[] columns);
+        void CreateTable(string command, string dbName);
 
         void DropDatabase(string command);
         void DropTable(string command, string dbName);
