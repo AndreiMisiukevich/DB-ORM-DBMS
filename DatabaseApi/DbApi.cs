@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace DatabaseApi
@@ -10,6 +11,8 @@ namespace DatabaseApi
     public sealed class DbApi: IDbApi
     {
         private const string ContentFolderKey = "CONTENT";
+        private const string TableMetaInfoKey = "TABLEMETA";
+        private const string TableСontentInfoKey = "TABLECONTENT";
 
         private static readonly Lazy<IDbApi> Instance = new Lazy<IDbApi>(() => new DbApi());
 
@@ -22,17 +25,24 @@ namespace DatabaseApi
         public static IDbApi Api { get { return Instance.Value; } }
 
 
-        public void CreateDb(string command)
+        public void CreateDataBase(string command)
         {
             ZipFile.Open(Path.Combine(ContentFolderKey, GetName(command)), ZipArchiveMode.Create);
         }
 
-        public void CreateTable(string command, string dbName)
+        public void CreateTable(string command, string dbName, params TableColumn[] columns)
         {
             var tableName = GetName(command);
             var xmlFile = new XDocument(
-                new XDeclaration("1.0", "utf-8", "yes"),
+                new XDeclaration("1.0", "Unicode", "yes"),
                 new XComment(string.Format("{0}.{1}", dbName, tableName)));
+
+
+            var columnInfoTagName = ConfigurationManager.AppSettings[TableMetaInfoKey];
+            var columnContentTagName = ConfigurationManager.AppSettings[TableСontentInfoKey];
+
+            xmlFile.AddFirst(columnInfoTagName, columns.Select(c => new XElement(c.Name, c.Type)));
+            xmlFile.AddFirst(columnContentTagName);
 
             using (var zipToOpen = new FileStream(Path.Combine(_pathToContent, dbName), FileMode.Open))
             {
@@ -46,7 +56,7 @@ namespace DatabaseApi
             }
         }
 
-        public void DropDb(string command)
+        public void DropDatabase(string command)
         {
             File.Delete(Path.Combine(ContentFolderKey, GetName(command)));
         }

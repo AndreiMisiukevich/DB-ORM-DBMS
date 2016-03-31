@@ -34,7 +34,7 @@ namespace DatabaseServer
             {
                 if (IsStartWith(command, CreateDbKey))
                 {
-                    _dbApi.CreateDb(command);
+                    _dbApi.CreateDataBase(command);
                     continue;
                 }
 
@@ -46,7 +46,7 @@ namespace DatabaseServer
 
                 if (IsStartWith(command, DropDbKey))
                 {
-                    _dbApi.DropDb(command);
+                    _dbApi.DropDatabase(command);
                     continue;
                 }
 
