@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace DatabaseApi
@@ -18,7 +19,7 @@ namespace DatabaseApi
 
         private static readonly Lazy<IDbApi> Instance = new Lazy<IDbApi>(() => new DbApi());
 
-        private readonly string _pathToContent = ConfigurationManager.AppSettings[ContentFolderKey];
+        private readonly string _сontentFolder = ConfigurationManager.AppSettings[ContentFolderKey];
         private readonly string _columnInfoTagName = ConfigurationManager.AppSettings[TableMetaInfoKey];
         private readonly string _columnContentTagName = ConfigurationManager.AppSettings[TableСontentInfoKey];
 
@@ -31,7 +32,10 @@ namespace DatabaseApi
 
         public void CreateDataBase(string command)
         {
-            ZipFile.Open(Path.Combine(ContentFolderKey, DbApiHelper.GetName(command)), ZipArchiveMode.Create);
+            using (ZipFile.Open(Path.Combine(_сontentFolder, DbApiHelper.GetName(command)),
+                ZipArchiveMode.Create))
+            {
+            }
         }
 
         public void CreateTable(string command, string dbName)
@@ -44,12 +48,12 @@ namespace DatabaseApi
             var columns = DbApiHelper.ParseColumnInfo(command);
             var metaInfoNode = new XElement(_columnInfoTagName);
             metaInfoNode.AddFirst(columns.Select(c => new XElement(c.Name, c.Type)));
-            xmlFile.AddFirst(metaInfoNode);
-
             var columnContentNode = new XElement(_columnContentTagName);
-            xmlFile.AddFirst(columnContentNode);
 
-            DbApiHelper.OpenDbForAction(_pathToContent, dbName, database =>
+            var rootNode = new XElement(tableName, metaInfoNode, columnContentNode);
+            xmlFile.AddFirst(rootNode);
+
+            DbApiHelper.OpenDbForAction(_сontentFolder, dbName, database =>
             {
                 using (var xmlStream = database.CreateEntry(tableName).Open())
                 {
@@ -67,7 +71,7 @@ namespace DatabaseApi
         public void DropTable(string command, string dbName)
         {
             var tableName = DbApiHelper.GetName(command);
-            DbApiHelper.OpenDbForAction(_pathToContent, dbName, database =>
+            DbApiHelper.OpenDbForAction(_сontentFolder, dbName, database =>
                 {
                     database.GetEntry(tableName).Delete();
                     return null;
@@ -77,7 +81,7 @@ namespace DatabaseApi
         public void InsertContent(string command, string dbName)
         {
             var tableName = DbApiHelper.GetName(command);
-            DbApiHelper.OpenDbForAction(_pathToContent, dbName, database =>
+            DbApiHelper.OpenDbForAction(_сontentFolder, dbName, database =>
             {
                 return DbApiHelper.OpenTableForAction(database, tableName, table =>
                 {

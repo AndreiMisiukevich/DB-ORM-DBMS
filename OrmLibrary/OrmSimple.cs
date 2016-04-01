@@ -65,7 +65,7 @@ namespace OrmLibrary
             var tableParams = new StringBuilder();
             foreach (var info in properties)
             {
-                tableParams.Append(string.Format("{0}:{1}", info.Name, TranslateType(info.PropertyType)));
+                tableParams.Append(string.Format("{0}:{1} ", info.Name, TranslateType(info.PropertyType)));
             }
 
             var createTableCommand = string.Format(CommandPattertns.CreateTable, tableType.Name, tableParams);

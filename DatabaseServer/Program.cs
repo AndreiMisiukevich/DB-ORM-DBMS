@@ -17,6 +17,7 @@ namespace DatabaseServer
         private const string BufferSizeKey = "BUFFER";
         private const string CancelationTimeOutKey = "TIMEOUT";
         private const string StopMessageKey = "STOP_MSG";
+        private const string StartMessageKey = "START_MSG";
 
         private static readonly IPAddress IpAddress;
         private static readonly IPEndPoint IpEndPoint;
@@ -24,6 +25,7 @@ namespace DatabaseServer
         private static readonly int BackLog;
         private static readonly int CancelationTimeOut;
         private static readonly string StopMessage;
+        private static readonly string StartMessage;
 
         static Program()
         {
@@ -36,6 +38,7 @@ namespace DatabaseServer
             BackLog = int.Parse(appSettings[BacklogKey]);
             CancelationTimeOut = int.Parse(appSettings[CancelationTimeOutKey]);
             StopMessage = appSettings[StopMessageKey];
+            StartMessage = appSettings[StartMessageKey];
         }
 
         public static void Main(string[] args)
@@ -51,7 +54,7 @@ namespace DatabaseServer
                 {
                     socketListener.Bind(IpEndPoint);
                     socketListener.Listen(BackLog);
-
+                    Console.WriteLine(StartMessage);
                     while (!cancelatinToken.IsCancellationRequested)
                     {
                         var handler = socketListener.Accept();

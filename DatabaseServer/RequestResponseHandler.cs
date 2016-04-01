@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Linq;
 using System.Text.RegularExpressions;
 using DatabaseApi;
 
@@ -19,13 +20,17 @@ namespace DatabaseServer
         private const string GetContentKey = "GET_CONTENT";
         private const string OkMessageKey = "OK_MSG";
 
-        private readonly char[] _commandsSeparator = {'.', '\n', '\t', '\r', ' '};
+        private readonly char[] _commandsSeparator = {'.', '\n', '\t', '\r'};
         private readonly IDbApi _dbApi = DbApi.Api;
 
         public string HandleRequest(string request)
         {
             var trimedRequest = RemoveMultyWhiteSpaces(request);
-            var commands = trimedRequest.Split(_commandsSeparator, StringSplitOptions.RemoveEmptyEntries);
+            var commands =
+                trimedRequest.Split(_commandsSeparator, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.Trim())
+                    .ToArray();
+
             return HandleCommands(commands);
         }
 

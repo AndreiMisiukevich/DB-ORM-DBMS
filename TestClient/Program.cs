@@ -1,15 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using OrmLibrary;
 
 namespace TestClient
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
+            var orm = new OrmSimple();
+            var dbName = "TestDatabase";
+            orm.CreateDataBase(dbName);
+            orm.CreateTable<TestEmployee>(dbName);
+            orm.CreateTable<TestProfession>(dbName);
         }
+    }
+
+    public class TestEmployee
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public double Salary { get; set; }
+    }
+
+    public class TestProfession
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
     }
 }
