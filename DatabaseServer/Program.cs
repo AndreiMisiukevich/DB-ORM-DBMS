@@ -9,26 +9,33 @@ using System.Collections.Specialized;
 
 namespace DatabaseServer
 {
-    class Program
+    public class Program
     {
         private const string HostKey = "HOST";
         private const string PortKey = "PORT";
         private const string BacklogKey = "BACKLOG";
         private const string BufferSizeKey = "BUFFER";
-        private const string CancelationTimeOut = "TIMEOUT";
+        private const string CancelationTimeOutKey = "TIMEOUT";
         private const string StopMessageKey = "STOP_MSG";
 
         private static readonly IPAddress IpAddress;
         private static readonly IPEndPoint IpEndPoint;
-        private static readonly NameValueCollection AppSettings;
+        private static readonly int BufferSize;
+        private static readonly int BackLog;
+        private static readonly int CancelationTimeOut;
+        private static readonly string StopMessage;
 
         static Program()
         {
-            AppSettings = ConfigurationManager.AppSettings;
-            var ipHost = Dns.GetHostEntry(AppSettings[HostKey]);
-            var port = int.Parse(AppSettings[PortKey]);
+            var appSettings = ConfigurationManager.AppSettings;
+            var ipHost = Dns.GetHostEntry(appSettings[HostKey]);
+            var port = int.Parse(appSettings[PortKey]);
             IpAddress = ipHost.AddressList[0];
             IpEndPoint = new IPEndPoint(IpAddress, port);
+            BufferSize = int.Parse(appSettings[BufferSizeKey]);
+            BackLog = int.Parse(appSettings[BacklogKey]);
+            CancelationTimeOut = int.Parse(appSettings[CancelationTimeOutKey]);
+            StopMessage = appSettings[StopMessageKey];
         }
 
         public static void Main(string[] args)
@@ -43,13 +50,12 @@ namespace DatabaseServer
                 try
                 {
                     socketListener.Bind(IpEndPoint);
-                    socketListener.Listen(int.Parse(AppSettings[BacklogKey]));
-                    var bufferSize = int.Parse(AppSettings[BufferSizeKey]);
+                    socketListener.Listen(BackLog);
 
                     while (!cancelatinToken.IsCancellationRequested)
                     {
                         var handler = socketListener.Accept();
-                        var bytes = new byte[bufferSize];
+                        var bytes = new byte[BufferSize];
                         var bytesRec = handler.Receive(bytes);
                         var clientRequest = Encoding.Unicode.GetString(bytes, 0, bytesRec);
 
@@ -76,7 +82,7 @@ namespace DatabaseServer
             {
                 tokenSource.Cancel();
                 CloseListener(listenerTask);
-                listenerTask.Wait(int.Parse(AppSettings[CancelationTimeOut]));
+                listenerTask.Wait(CancelationTimeOut);
             }
             catch (AggregateException e)
             {
@@ -94,7 +100,7 @@ namespace DatabaseServer
                 tokenSource.Dispose();
             }
 
-            Console.WriteLine(AppSettings[StopMessageKey]);
+            Console.WriteLine(StopMessage);
             Console.ReadKey();
         }
 

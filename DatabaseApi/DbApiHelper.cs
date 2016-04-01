@@ -14,11 +14,16 @@ namespace DatabaseApi
         private const string IntegerTypeKey = "INTEGER";
         private const string StringTypeKey = "STRING";
         private const string DoubleTypeKey = "DOUBLE";
+        private const string NoSuchTypeMessagePattern = "There are no such type {0}";
         private const int NameIndex = 2;
+
+        private static readonly string IntegerTypeName = ConfigurationManager.AppSettings[IntegerTypeKey];
+        private static readonly string StringTypeName = ConfigurationManager.AppSettings[StringTypeKey];
+        private static readonly string DoubleTypeName = ConfigurationManager.AppSettings[DoubleTypeKey];
 
         public static string GetName(string command)
         {
-            return command.Split(' ')[NameIndex].Replace("\"", String.Empty).Trim();
+            return command.Split(' ')[NameIndex].Replace("\"", String.Empty).Replace("'", string.Empty).Trim();
         }
 
         public static IEnumerable<TableColumn> ParseColumnInfo(string command)
@@ -32,22 +37,22 @@ namespace DatabaseApi
 
         public static Type ParseType(string typeName)
         {
-            if (typeName == ConfigurationManager.AppSettings[IntegerTypeKey])
+            if (typeName.Equals(IntegerTypeName, StringComparison.CurrentCultureIgnoreCase))
             {
                 return typeof(Int32);
             }
 
-            if (typeName == ConfigurationManager.AppSettings[StringTypeKey])
+            if (typeName.Equals(StringTypeName, StringComparison.CurrentCultureIgnoreCase))
             {
                 return typeof(String);
             }
 
-            if (typeName == ConfigurationManager.AppSettings[DoubleTypeKey])
+            if (typeName.Equals(DoubleTypeName, StringComparison.CurrentCultureIgnoreCase))
             {
                 return typeof(Double);
             }
 
-            throw new ArgumentException(String.Format("There are no such type {0}", typeName));
+            throw new ArgumentException(String.Format(NoSuchTypeMessagePattern, typeName));
         }
 
         public static IEnumerable<string> GetValues(string command)
@@ -66,12 +71,12 @@ namespace DatabaseApi
             }
         }
 
-        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument> action)
+        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, XDocument> action)
         {
             using (var xmlStream = database.GetEntry(tableName).Open())
             {
                 var xmlDocument = XDocument.Load(xmlStream);
-                return action();
+                return action(xmlDocument);
             }
         }
     }

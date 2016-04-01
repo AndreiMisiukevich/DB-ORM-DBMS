@@ -8,8 +8,8 @@
         void DropDatabase(string command);
         void DropTable(string command, string dbName);
 
-        string GetContent(string command, string dbName);
         void InsertContent(string command, string dbName);
+        string GetContent(string command, string dbName);
 
         string UseDb(string command);
     }

@@ -14,10 +14,13 @@ namespace DatabaseApi
         private const string ContentFolderKey = "CONTENT_FOLDER";
         private const string TableMetaInfoKey = "TABLE_META";
         private const string TableСontentInfoKey = "TABLE_CONTENT";
+        private const string AnyRecordName = "*";
 
         private static readonly Lazy<IDbApi> Instance = new Lazy<IDbApi>(() => new DbApi());
 
         private readonly string _pathToContent = ConfigurationManager.AppSettings[ContentFolderKey];
+        private readonly string _columnInfoTagName = ConfigurationManager.AppSettings[TableMetaInfoKey];
+        private readonly string _columnContentTagName = ConfigurationManager.AppSettings[TableСontentInfoKey];
 
         private DbApi()
         {
@@ -38,17 +41,17 @@ namespace DatabaseApi
                 new XDeclaration("1.0", "Unicode", "yes"),
                 new XComment(string.Format("{0}.{1}", dbName, tableName)));
 
-
-            var columnInfoTagName = ConfigurationManager.AppSettings[TableMetaInfoKey];
-            var columnContentTagName = ConfigurationManager.AppSettings[TableСontentInfoKey];
-
             var columns = DbApiHelper.ParseColumnInfo(command);
-            xmlFile.AddFirst(columnInfoTagName, columns.Select(c => new XElement(c.Name, c.Type)));
-            xmlFile.AddFirst(columnContentTagName);
+            var metaInfoNode = new XElement(_columnInfoTagName);
+            metaInfoNode.AddFirst(columns.Select(c => new XElement(c.Name, c.Type)));
+            xmlFile.AddFirst(metaInfoNode);
 
-            DbApiHelper.OpenDbForAction(_pathToContent, dbName, archive =>
+            var columnContentNode = new XElement(_columnContentTagName);
+            xmlFile.AddFirst(columnContentNode);
+
+            DbApiHelper.OpenDbForAction(_pathToContent, dbName, database =>
             {
-                using (var xmlStream = archive.CreateEntry(tableName).Open())
+                using (var xmlStream = database.CreateEntry(tableName).Open())
                 {
                     xmlFile.Save(xmlStream);
                     return null;
@@ -64,10 +67,9 @@ namespace DatabaseApi
         public void DropTable(string command, string dbName)
         {
             var tableName = DbApiHelper.GetName(command);
-            DbApiHelper.OpenDbForAction(_pathToContent, dbName,
-                archive =>
+            DbApiHelper.OpenDbForAction(_pathToContent, dbName, database =>
                 {
-                    archive.GetEntry(tableName).Delete();
+                    database.GetEntry(tableName).Delete();
                     return null;
                 });
         }
@@ -75,11 +77,24 @@ namespace DatabaseApi
         public void InsertContent(string command, string dbName)
         {
             var tableName = DbApiHelper.GetName(command);
-            DbApiHelper.OpenDbForAction(_pathToContent, dbName, archive =>
+            DbApiHelper.OpenDbForAction(_pathToContent, dbName, database =>
             {
-                return DbApiHelper.OpenTableForAction(archive, tableName, () =>
+                return DbApiHelper.OpenTableForAction(database, tableName, table =>
                 {
+                    var insertingLines = DbApiHelper.GetValues(command);
+                    var metaInfoNodes =
+                        table.Descendants(_columnInfoTagName)
+                            .First()
+                            .Elements()
+                            .Select(x => new {x.Name, x.Value}).ToArray();
 
+                    foreach (var line in insertingLines)
+                    {
+                        var newRecord = new XElement(AnyRecordName,
+                            line.Split(':').Select((value, i) => new XAttribute(metaInfoNodes[i].Name, value)));
+
+                        table.Descendants(_columnContentTagName).First().Add(newRecord);
+                    }
                     return null;
                 });
             });
