@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 
 namespace OrmLibrary
@@ -12,9 +14,19 @@ namespace OrmLibrary
         private const string PortKey = "PORT";
         private const string BufferSizeKey = "BUFFER";
 
+        private const string IntegerTypeKey = "INTEGER";
+        private const string StringTypeKey = "STRING";
+        private const string DoubleTypeKey = "DOUBLE";
+
+        private const string EntityDllPathKey = "ENTITY_DLL";
+
         private readonly IPAddress _ipAddress;
         private readonly IPEndPoint _ipEndPoint;
         private readonly int _bufferSize;
+        private readonly string _integerType;
+        private readonly string _stringType;
+        private readonly string _doubleType;
+        private readonly string _entityDllPath;
 
         public OrmSimple()
         {
@@ -24,10 +36,17 @@ namespace OrmLibrary
             _ipAddress = ipHost.AddressList[0];
             _ipEndPoint = new IPEndPoint(_ipAddress, port);
             _bufferSize = int.Parse(appSettings[BufferSizeKey]);
+            _integerType = appSettings[IntegerTypeKey];
+            _stringType = appSettings[StringTypeKey];
+            _doubleType = appSettings[DoubleTypeKey];
+            _entityDllPath = appSettings[EntityDllPathKey];
         }
 
-        public void GenerateDataBase(string entityDllPath, string dbName)
+        public void GenerateDataBase()
         {
+            var dbName = AppDomain.CurrentDomain.FriendlyName;
+            //TODO: write generator logic
+
             throw new NotImplementedException();
         }
 
@@ -39,7 +58,20 @@ namespace OrmLibrary
 
         public void CreateTable<T>(string dbName)
         {
-            throw new NotImplementedException();
+            var commandBuilder = new StringBuilder(UseDatabaseCommand(dbName));
+            var tableType = typeof (T);
+            var properties = tableType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+            var tableParams = new StringBuilder();
+            foreach (var info in properties)
+            {
+                tableParams.Append(string.Format("{0}:{1}", info.Name, TranslateType(info.PropertyType)));
+            }
+
+            var createTableCommand = string.Format(CommandPattertns.CreateTable, tableType.Name, tableParams);
+            commandBuilder.Append(createTableCommand);
+
+            SendRequest(commandBuilder.ToString());
         }
 
         public void DropDatabase(string dbName)
@@ -50,7 +82,11 @@ namespace OrmLibrary
 
         public void DropTable<T>(string dbName)
         {
-            throw new NotImplementedException();
+            var commandBuilder = new StringBuilder(UseDatabaseCommand(dbName));
+            var tableType = typeof(T);
+            var dropCommand = string.Format(CommandPattertns.DropTable, tableType.Name);
+            commandBuilder.Append(dropCommand);
+            SendRequest(commandBuilder.ToString());
         }
 
         public void InsertContent<T>(string dbName, params T[] items)
@@ -58,9 +94,34 @@ namespace OrmLibrary
             throw new NotImplementedException();
         }
 
-        public string GetContent(string command, string dbName)
+        public IEnumerable<T> GetContent<T>(string command, string dbName)
         {
             throw new NotImplementedException();
+        }
+
+        private string UseDatabaseCommand(string dbName)
+        {
+            return string.Format(CommandPattertns.UseDatabase, dbName);
+        }
+
+        private string TranslateType(Type propertyType)
+        {
+            if (propertyType == typeof (Int32))
+            {
+                return _integerType;
+            }
+
+            if (propertyType == typeof(String))
+            {
+                return _stringType;
+            }
+
+            if (propertyType == typeof(Double))
+            {
+                return _doubleType;
+            }
+
+            return propertyType.Name;
         }
 
         private string SendRequest(string request)
