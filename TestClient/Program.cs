@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using System;
 using OrmLibrary;
 
 namespace TestClient
@@ -9,11 +9,12 @@ namespace TestClient
         {
             var orm = new OrmSimple();
             var dbName = "TestDatabase";
+
             orm.CreateDataBase(dbName);
             orm.CreateTable<TestEmployee>(dbName);
             orm.CreateTable<TestProfession>(dbName);
 
-            var employeeList = new []
+            var employeeList = new[]
             {
                 new TestEmployee {Id = 1, Age = 20, Name = "Alex", Salary = 1500.0},
                 new TestEmployee {Id = 2, Age = 22, Name = "Helen", Salary = 950.0}
