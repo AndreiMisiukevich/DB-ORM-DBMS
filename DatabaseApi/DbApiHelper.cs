@@ -71,12 +71,12 @@ namespace DatabaseApi
             }
         }
 
-        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, XDocument> action)
+        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, Stream, XDocument> action)
         {
             using (var xmlStream = database.GetEntry(tableName).Open())
             {
                 var xmlDocument = XDocument.Load(xmlStream);
-                return action(xmlDocument);
+                return action(xmlDocument, xmlStream);
             }
         }
     }

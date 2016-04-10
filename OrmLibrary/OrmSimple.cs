@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -58,20 +59,15 @@ namespace OrmLibrary
 
         public void CreateTable<T>(string dbName)
         {
-            var commandBuilder = new StringBuilder(UseDatabaseCommand(dbName));
-            var tableType = typeof (T);
-            var properties = tableType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-
-            var tableParams = new StringBuilder();
-            foreach (var info in properties)
+            WorkWithTable<T>(dbName, CommandPattertns.CreateTable, properties =>
             {
-                tableParams.Append(string.Format("{0}:{1} ", info.Name, TranslateType(info.PropertyType)));
-            }
-
-            var createTableCommand = string.Format(CommandPattertns.CreateTable, tableType.Name, tableParams);
-            commandBuilder.Append(createTableCommand);
-
-            SendRequest(commandBuilder.ToString());
+                var tableParams = new StringBuilder();
+                foreach (var info in properties)
+                {
+                    tableParams.Append(string.Format("{0}:{1} ", info.Name, TranslateType(info.PropertyType)));
+                }
+                return tableParams.ToString();
+            });
         }
 
         public void DropDatabase(string dbName)
@@ -91,11 +87,24 @@ namespace OrmLibrary
 
         public void InsertContent<T>(string dbName, params T[] items)
         {
-            throw new NotImplementedException();
+            WorkWithTable<T>(dbName, CommandPattertns.InsertValues, properties =>
+            {
+                var tableParams = new StringBuilder();
+                foreach (var item in items)
+                {
+                    foreach (var info in properties)
+                    {
+                        tableParams.Append(string.Format("{0}:", info.GetValue(item)));
+                    }
+                    tableParams.Append(" ");
+                }
+                return tableParams.ToString();
+            });
         }
 
         public IEnumerable<T> GetContent<T>(string command, string dbName)
         {
+            //TODO: thik of this (how to implement it better)
             throw new NotImplementedException();
         }
 
@@ -139,6 +148,18 @@ namespace OrmLibrary
             sender.Close();
 
             return Encoding.Unicode.GetString(bytes);
+        }
+
+        private void WorkWithTable<T>(string dbName, string tableCommandPattern, Func<PropertyInfo[], string> getTableParams)
+        {
+            var commandBuilder = new StringBuilder(UseDatabaseCommand(dbName));
+            var tableType = typeof(T);
+            var properties = tableType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            var tableParams = getTableParams(properties);
+
+            var valuesCommand = string.Format(tableCommandPattern, tableType.Name, tableParams);
+            commandBuilder.Append(valuesCommand);
+            SendRequest(commandBuilder.ToString());
         }
     }
 }

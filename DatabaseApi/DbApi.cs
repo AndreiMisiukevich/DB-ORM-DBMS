@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Text.RegularExpressions;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace DatabaseApi
@@ -15,7 +12,7 @@ namespace DatabaseApi
         private const string ContentFolderKey = "CONTENT_FOLDER";
         private const string TableMetaInfoKey = "TABLE_META";
         private const string TableСontentInfoKey = "TABLE_CONTENT";
-        private const string AnyRecordName = "*";
+        private const string AnyRecordName = "R";
 
         private static readonly Lazy<IDbApi> Instance = new Lazy<IDbApi>(() => new DbApi());
 
@@ -83,22 +80,25 @@ namespace DatabaseApi
             var tableName = DbApiHelper.GetName(command);
             DbApiHelper.OpenDbForAction(_сontentFolder, dbName, database =>
             {
-                return DbApiHelper.OpenTableForAction(database, tableName, table =>
+                return DbApiHelper.OpenTableForAction(database, tableName, (table, stream) =>
                 {
-                    var insertingLines = DbApiHelper.GetValues(command);
                     var metaInfoNodes =
                         table.Descendants(_columnInfoTagName)
                             .First()
                             .Elements()
                             .Select(x => new {x.Name, x.Value}).ToArray();
 
+                    var insertingLines = DbApiHelper.GetValues(command);
                     foreach (var line in insertingLines)
                     {
                         var newRecord = new XElement(AnyRecordName,
-                            line.Split(':').Select((value, i) => new XAttribute(metaInfoNodes[i].Name, value)));
+                            line.Split(new[] {':'}, StringSplitOptions.RemoveEmptyEntries)
+                                .Select((value, i) => new XAttribute(metaInfoNodes[i].Name, value)));
 
                         table.Descendants(_columnContentTagName).First().Add(newRecord);
                     }
+
+                    table.Save(stream);
                     return null;
                 });
             });
@@ -106,6 +106,7 @@ namespace DatabaseApi
 
         public string GetContent(string command, string dbName)
         {
+            //TODO: think of this
             throw new NotImplementedException();
         }
 
