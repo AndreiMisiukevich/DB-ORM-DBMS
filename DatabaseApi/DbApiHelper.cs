@@ -71,13 +71,25 @@ namespace DatabaseApi
             }
         }
 
-        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, Stream, XDocument> action)
+        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, XDocument> action)
         {
+            XDocument result;
+            XDocument table;
+
             using (var xmlStream = database.GetEntry(tableName).Open())
             {
-                var xmlDocument = XDocument.Load(xmlStream);
-                return action(xmlDocument, xmlStream);
+                table = XDocument.Load(xmlStream);
+                result = action(table);
             }
+
+            database.GetEntry(tableName).Delete();
+
+            using (var xmlStream = database.CreateEntry(tableName).Open())
+            {
+                table.Save(xmlStream);
+            }
+
+            return result;
         }
     }
 }

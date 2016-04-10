@@ -80,7 +80,7 @@ namespace DatabaseApi
             var tableName = DbApiHelper.GetName(command);
             DbApiHelper.OpenDbForAction(_сontentFolder, dbName, database =>
             {
-                return DbApiHelper.OpenTableForAction(database, tableName, (table, stream) =>
+                return DbApiHelper.OpenTableForAction(database, tableName, table =>
                 {
                     var metaInfoNodes =
                         table.Descendants(_columnInfoTagName)
@@ -97,8 +97,7 @@ namespace DatabaseApi
 
                         table.Descendants(_columnContentTagName).First().Add(newRecord);
                     }
-
-                    table.Save(stream);
+                    
                     return null;
                 });
             });
