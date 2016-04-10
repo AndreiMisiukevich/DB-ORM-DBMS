@@ -71,7 +71,7 @@ namespace DatabaseApi
             }
         }
 
-        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, XDocument> action)
+        public static XDocument OpenTableForAction(ZipArchive database, string tableName, Func<XDocument, XDocument> action, bool isUpdateMode = true)
         {
             XDocument result;
             XDocument table;
@@ -82,11 +82,14 @@ namespace DatabaseApi
                 result = action(table);
             }
 
-            database.GetEntry(tableName).Delete();
-
-            using (var xmlStream = database.CreateEntry(tableName).Open())
+            if (isUpdateMode)
             {
-                table.Save(xmlStream);
+                database.GetEntry(tableName).Delete();
+
+                using (var xmlStream = database.CreateEntry(tableName).Open())
+                {
+                    table.Save(xmlStream);
+                }
             }
 
             return result;
